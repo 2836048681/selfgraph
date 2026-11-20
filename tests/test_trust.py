@@ -234,6 +234,15 @@ def test_certified_relations_survive_supersede_and_lead_retrieval():
         run(g.relations.certify("relation:missing", by="hr"))
 
 
+@pytest.mark.parametrize("by", ["a\x00b", "a\ud83dlonely"])
+def test_certify_rejects_unstorable_verifier_text(by):
+    g = employment_graph("cert-invalid-by")
+    relation = run(g.insert.facts({"relations": [works_at("acme", 2024)]})).relations[0]
+
+    with pytest.raises(ValidationError, match="certified_by cannot contain control or surrogate characters"):
+        run(g.relations.certify(relation.id, by=by))
+
+
 def test_certify_rejects_a_retired_relation():
     g = employment_graph("cert-retired", contradiction="supersede")
     old = run(g.insert.facts({"relations": [works_at("acme", 2024)]})).relations[0]
